@@ -45,7 +45,7 @@ if arch == 'larch64':
 elif arch == 'Darwin':
   device_string = 'CLANG=1 IMAGE=0'
 else:
-  device_string = 'LLVM=1 LLVMOPT=1 BEAM=0 IMAGE=0'
+  device_string = 'GPU=1 BEAM=0 IMAGE=0'
 
 # TODO-SP: after 15.4 it's not possible to compile models locally on mac https://discord.com/channels/469524606043160576/1362735424644055230
 if arch != 'Darwin':

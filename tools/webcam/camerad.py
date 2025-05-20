@@ -19,7 +19,7 @@ CAMERAS = [
 if not NO_DM:
   CAMERAS.append(CameraType("driverCameraState", VisionStreamType.VISION_STREAM_DRIVER, os.getenv("DRIVER_CAM", "2")))
 if WIDE_CAM:
-  CAMERAS.append(CameraType("wideRoadCameraState", VisionStreamType.VISION_STREAM_WIDE_ROAD, WIDE_CAM))
+  # CAMERAS.append(CameraType("wideRoadCameraState", VisionStreamType.VISION_STREAM_WIDE_ROAD, WIDE_CAM))
 
 class Camerad:
   def __init__(self):

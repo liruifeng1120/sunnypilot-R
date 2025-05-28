@@ -28,7 +28,7 @@ const Eigen::Matrix3f VIEW_FROM_DEVICE = (Eigen::Matrix3f() <<
 
 const Eigen::Matrix3f FCAM_INTRINSIC_MATRIX = (Eigen::Matrix3f() <<
   3293.0, 0.0, 2592.0 / 2,
-  0.0, 3250.0, 1944.0 / 2,
+  0.0, 3246.0, 1944.0 / 2,
   0.0, 0.0, 1.0).finished();
 
 // tici ecam focal probably wrong? magnification is not consistent across frame

@@ -45,10 +45,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     self.pitch_last = 0.0
 
     # setup future time offsets
-    v_ego_kph = CS.vEgo * 3.6  # 将m/s转换为km/h
-    base_delay = 0.2
-    adjusted_delay = base_delay - 0.05 if v_ego_kph > 70 else base_delay
-    steer_delay = CP.steerActuatorDelay + adjusted_delay
+    self.nn_time_offset = CP.steerActuatorDelay + 0.2
     future_times = [0.3, 0.6, 1.0, 1.5] # seconds in the future
     self.nn_future_times = [i + self.nn_time_offset for i in future_times]
 

@@ -85,9 +85,7 @@ class LatControlTorqueExtBase:
 
     # precompute time differences between ModelConstants.T_IDXS
     self.t_diffs = np.diff(ModelConstants.T_IDXS)
-    v_ego_kph = CS.vEgo * 3.6  # 将m/s转换为km/h
-    extra_delay = 0.3 - 0.05 if v_ego_kph > 70 else 0.3
-    steer_delay = CP.steerActuatorDelay + extra_delay
+    self.desired_lat_jerk_time = CP.steerActuatorDelay + 0.3
 
   def update_model_v2(self, model_v2):
     self.model_v2 = model_v2

@@ -11,6 +11,11 @@
 
 class ModelRenderer {
 public:
+  // 添加颜色常量定义
+  static constexpr QColor ROAD_YELLOW = QColor(255, 225, 100, 120);  // 道路黄色 (RGB:255,225,100,120， alpha:180)
+  static constexpr QColor LANE_GREEN = QColor(50, 200, 50, 200);    // 车道线绿色 (RGB:50,200,50, alpha:200)
+  static constexpr QColor ROAD_EDGE_RED = QColor(255, 0, 0, 200);   // 道路边缘红色
+
   ModelRenderer() {}
   void setTransform(const Eigen::Matrix3f &transform) { car_space_transform = transform; }
   void draw(QPainter &painter, const QRect &surface_rect);

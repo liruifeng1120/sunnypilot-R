@@ -92,15 +92,19 @@ void ModelRenderer::update_model(const cereal::ModelDataV2::Reader &model, const
 }
 
 void ModelRenderer::drawLaneLines(QPainter &painter) {
-  // lanelines
+  // 车道线 - 使用图片中的绿色
   for (int i = 0; i < std::size(lane_line_vertices); ++i) {
-    painter.setBrush(QColor::fromRgbF(1.0, 1.0, 1.0, std::clamp<float>(lane_line_probs[i], 0.0, 0.7)));
+    QColor laneColor = LANE_GREEN;
+    laneColor.setAlphaF(std::clamp<float>(lane_line_probs[i] * 0.9, 0.5, 0.8));
+    painter.setBrush(laneColor);
     painter.drawPolygon(lane_line_vertices[i]);
   }
 
-  // road edges
+  // 道路边缘 - 保持红色
   for (int i = 0; i < std::size(road_edge_vertices); ++i) {
-    painter.setBrush(QColor::fromRgbF(1.0, 0, 0, std::clamp<float>(1.0 - road_edge_stds[i], 0.0, 1.0)));
+    QColor edgeColor = ROAD_EDGE_RED;
+    edgeColor.setAlphaF(std::clamp<float>(1.0 - road_edge_stds[i], 0.6, 1.0));
+    painter.setBrush(edgeColor);
     painter.drawPolygon(road_edge_vertices[i]);
   }
 }
@@ -108,32 +112,25 @@ void ModelRenderer::drawLaneLines(QPainter &painter) {
 void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reader &model, int height) {
   QLinearGradient bg(0, height, 0, 0);
   if (experimental_mode) {
-    // The first half of track_vertices are the points for the right side of the path
+    // 实验模式使用琥珀色渐变
     const auto &acceleration = model.getAcceleration().getX();
     const int max_len = std::min<int>(track_vertices.length() / 2, acceleration.size());
 
     for (int i = 0; i < max_len; ++i) {
-      // Some points are out of frame
-      int track_idx = max_len - i - 1;  // flip idx to start from bottom right
+      int track_idx = max_len - i - 1;
       if (track_vertices[track_idx].y() < 0 || track_vertices[track_idx].y() > height) continue;
 
-      // Flip so 0 is bottom of frame
       float lin_grad_point = (height - track_vertices[track_idx].y()) / height;
-
-      // speed up: 120, slow down: 0
-      float path_hue = fmax(fmin(60 + acceleration[i] * 35, 120), 0);
-      // FIXME: painter.drawPolygon can be slow if hue is not rounded
-      path_hue = int(path_hue * 100 + 0.5) / 100;
-
-      float saturation = fmin(fabs(acceleration[i] * 1.5), 1);
-      float lightness = util::map_val(saturation, 0.0f, 1.0f, 0.95f, 0.62f);        // lighter when grey
-      float alpha = util::map_val(lin_grad_point, 0.75f / 2.f, 0.75f, 0.4f, 0.0f);  // matches previous alpha fade
+      
+      // 使用琥珀色色调 (30°)
+      float path_hue = 30.0f;
+      float saturation = fmin(fabs(acceleration[i] * 1.5), 0.9f);
+      float lightness = util::map_val(saturation, 0.0f, 1.0f, 0.7f, 0.5f);
+      float alpha = util::map_val(lin_grad_point, 0.75f / 2.f, 0.75f, 0.7f, 0.0f);
+      
       bg.setColorAt(lin_grad_point, QColor::fromHslF(path_hue / 360., saturation, lightness, alpha));
-
-      // Skip a point, unless next is last
       i += (i + 2) < max_len ? 1 : 0;
     }
-
   } else {
     updatePathGradient(bg);
   }
@@ -143,35 +140,34 @@ void ModelRenderer::drawPath(QPainter &painter, const cereal::ModelDataV2::Reade
 }
 
 void ModelRenderer::updatePathGradient(QLinearGradient &bg) {
+  // 使用图片中的黄色渐变
   static const QColor throttle_colors[] = {
-      QColor::fromHslF(148. / 360., 0.94, 0.51, 0.4),
-      QColor::fromHslF(112. / 360., 1.0, 0.68, 0.35),
-      QColor::fromHslF(112. / 360., 1.0, 0.68, 0.0)};
-
-  static const QColor no_throttle_colors[] = {
-      QColor::fromHslF(148. / 360., 0.0, 0.95, 0.4),
-      QColor::fromHslF(112. / 360., 0.0, 0.95, 0.35),
-      QColor::fromHslF(112. / 360., 0.0, 0.95, 0.0),
+      QColor(255, 230, 120, 150),  // 暖黄
+      QColor(255, 240, 150, 100),
+      QColor(255, 245, 180, 0)
   };
 
-  // Transition speed; 0.1 corresponds to 0.5 seconds at UI_FREQ
-  constexpr float transition_speed = 0.1f;
+  static const QColor no_throttle_colors[] = {
+      QColor(255, 235, 140, 120),  // 浅黄
+      QColor(255, 245, 170, 80),
+      QColor(255, 250, 190, 0)
+  };
 
-  // Start transition if throttle state changes
+  constexpr float transition_speed = 0.1f;
   bool allow_throttle = (*uiState()->sm)["longitudinalPlan"].getLongitudinalPlan().getAllowThrottle() || !longitudinal_control;
+  
   if (allow_throttle != prev_allow_throttle) {
     prev_allow_throttle = allow_throttle;
-    // Invert blend factor for a smooth transition when the state changes mid-animation
     blend_factor = std::max(1.0f - blend_factor, 0.0f);
   }
 
   const QColor *begin_colors = allow_throttle ? no_throttle_colors : throttle_colors;
   const QColor *end_colors = allow_throttle ? throttle_colors : no_throttle_colors;
+  
   if (blend_factor < 1.0f) {
     blend_factor = std::min(blend_factor + transition_speed, 1.0f);
   }
 
-  // Set gradient colors by blending the start and end colors
   bg.setColorAt(0.0f, blendColors(begin_colors[0], end_colors[0], blend_factor));
   bg.setColorAt(0.5f, blendColors(begin_colors[1], end_colors[1], blend_factor));
   bg.setColorAt(1.0f, blendColors(begin_colors[2], end_colors[2], blend_factor));
@@ -219,7 +215,6 @@ void ModelRenderer::drawLead(QPainter &painter, const cereal::RadarState::LeadDa
   painter.drawPolygon(chevron, std::size(chevron));
 }
 
-// Projects a point in car to space to the corresponding point in full frame image space.
 bool ModelRenderer::mapToScreen(float in_x, float in_y, float in_z, QPointF *out) {
   Eigen::Vector3f input(in_x, in_y, in_z);
   auto pt = car_space_transform * input;
@@ -233,13 +228,11 @@ void ModelRenderer::mapLineToPolygon(const cereal::XYZTData::Reader &line, float
   QPointF left, right;
   pvd->clear();
   for (int i = 0; i <= max_idx; i++) {
-    // highly negative x positions  are drawn above the frame and cause flickering, clip to zy plane of camera
     if (line_x[i] < 0) continue;
 
     bool l = mapToScreen(line_x[i], line_y[i] - y_off, line_z[i] + z_off, &left);
     bool r = mapToScreen(line_x[i], line_y[i] + y_off, line_z[i] + z_off, &right);
     if (l && r) {
-      // For wider lines the drawn polygon will "invert" when going over a hill and cause artifacts
       if (!allow_invert && pvd->size() && left.y() > pvd->back().y()) {
         continue;
       }

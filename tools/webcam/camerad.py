@@ -6,14 +6,14 @@ from collections import namedtuple
 from msgq.visionipc import VisionIpcServer, VisionStreamType
 from cereal import messaging
 
-from openpilot.tools.webcam.camera import Camera
+from openpilot.tools.webcam.camera import Camera, CameraMJPG
 from openpilot.common.realtime import Ratekeeper
 
 WIDE_CAM = os.getenv("WIDE_CAM")
 CameraType = namedtuple("CameraType", ["msg_name", "stream_type", "cam_id"])
 CAMERAS = [
   CameraType("roadCameraState", VisionStreamType.VISION_STREAM_ROAD, os.getenv("ROAD_CAM", "0")),
-  CameraType("driverCameraState", VisionStreamType.VISION_STREAM_DRIVER, os.getenv("DRIVER_CAM", "2")),
+  # CameraType("driverCameraState", VisionStreamType.VISION_STREAM_DRIVER, os.getenv("DRIVER_CAM", "2")),
 ]
 if WIDE_CAM:
   CAMERAS.append(CameraType("wideRoadCameraState", VisionStreamType.VISION_STREAM_WIDE_ROAD, WIDE_CAM))
@@ -27,7 +27,7 @@ class Camerad:
     for c in CAMERAS:
       cam_device = f"/dev/video{c.cam_id}"
       print(f"opening {c.msg_name} at {cam_device}")
-      cam = Camera(c.msg_name, c.stream_type, cam_device)
+      cam = CameraMJPG(c.msg_name, c.stream_type, cam_device)
       self.cameras.append(cam)
       self.vipc_server.create_buffers(c.stream_type, 20, cam.W, cam.H)
 
